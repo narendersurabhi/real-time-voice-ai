@@ -14,3 +14,12 @@ def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_webrtc_config() -> None:
+    response = client.get("/webrtc/config")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["transport"] == "webrtc"
+    assert payload["iceServers"]

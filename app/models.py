@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Literal, Optional
 
 
@@ -27,9 +27,10 @@ class PipelineEvent:
         "session_started",
         "transcript_partial",
         "transcript_final",
-        "llm_token",
+        "llm_chunk",
         "llm_final",
         "tts_chunk",
+        "turn_metrics",
         "turn_completed",
         "error",
     ]
@@ -37,6 +38,7 @@ class PipelineEvent:
     content: str
     is_final: bool = False
     latency_ms: Optional[float] = None
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def model_dump(self) -> dict[str, object]:
         return asdict(self)

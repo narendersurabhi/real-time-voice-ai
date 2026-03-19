@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.config import PipelineConfig
+from app.evaluation import calculate_wer
 from app.models import AudioInput
 from app.pipeline import VoicePipeline
 from app.providers.mock import MockLLMProvider, MockSTTProvider, MockTTSProvider
@@ -11,10 +13,12 @@ except ModuleNotFoundError:  # pragma: no cover - optional runtime dependency in
     WebSocket = object
     WebSocketDisconnect = Exception
 
+config = PipelineConfig.from_env()
 pipeline = VoicePipeline(
     stt=MockSTTProvider(),
     llm=MockLLMProvider(),
     tts=MockTTSProvider(),
+    config=config,
 )
 
 if FastAPI is not None:
@@ -23,6 +27,29 @@ if FastAPI is not None:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+
+    @app.get("/sessions")
+    async def list_sessions() -> dict[str, object]:
+        return {"sessions": pipeline.session_store.all_snapshots()}
+
+
+    @app.get("/sessions/{session_id}")
+    async def get_session(session_id: str) -> dict[str, object]:
+        return pipeline.session_store.snapshot(session_id)
+
+
+    @app.get("/webrtc/config")
+    async def webrtc_config() -> dict[str, object]:
+        return {
+            "iceServers": [{"urls": server} for server in config.ice_servers],
+            "transport": "webrtc",
+        }
+
+
+    @app.get("/evaluate/wer")
+    async def evaluate_wer(reference: str, hypothesis: str) -> dict[str, object]:
+        return calculate_wer(reference, hypothesis).__dict__
 
 
     @app.websocket("/ws/voice")
